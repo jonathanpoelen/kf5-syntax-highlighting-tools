@@ -1,0 +1,65 @@
+#!/bin/bash
+
+set -e
+
+# base="$(realpath "$(dirname "$0")")"
+# base="${base%/*}"
+# cd "$base"
+
+base="$PWD"
+
+d=~/rawdisk2/sh
+
+dhi="$d/org.kde.syntax-highlighting"
+mkdir -p "$dhi" "$dhi/themes"
+cp ~/game/org.kde.syntax-highlighting/themes/my.theme "$dhi/themes"
+ln -s "$base/data/syntax/" "$dhi"
+
+ln -s "$base/"* "$d"
+cd "$d"
+rm CMakeLists.txt
+sed 's#find_package(ECM 5[^ ]\+ REQUIRED NO_MODULE)#find_package(ECM 5.50.0 REQUIRED NO_MODULE)#;/include(ECMAddQch)/d' \
+  "$base"/CMakeLists.txt > CMakeLists.txt
+
+mkdir b
+cd b
+
+echo '#!/bin/sh
+set -e
+cd '"$PWD"'/autotests
+for name in "$@" ; do
+  if [ -r output/highlight.$name.ref ]; then
+    name=highlight.$name
+  fi
+  echo copy $name
+  cp output/$name.ref '"$base"'/autotests/reference/
+  cp html.output/$name.html '"$base"'/autotests/html/
+  cp folding.out/$name.fold '"$base"'/autotests/folding/
+done' > update-reference-data.sh
+
+echo '#!/bin/sh
+XDG_DATA_DIRS='"$d"' vt-kate-syntax-highlighter -tMy "$@"' > hi.sh
+
+echo '#!/bin/sh
+XDG_DATA_DIRS='"$d"' RLWRAP_HOME='"$d"' rlwrap vt-kate-syntax-highlighter -tMy -us "$@"' > ihi.sh
+
+echo '#!/bin/sh
+if [ $# -eq 1 ]; then
+  ninja && XDG_DATA_DIRS='"$d"' ctest --output-on-failure --rerun-failed
+else
+  ninja && XDG_DATA_DIRS='"$d"' ctest --output-on-failure
+fi' > test.sh
+
+chmod +x update-reference-data.sh hi.sh ihi.sh test.sh
+
+ln -s "$base"/autotests/input/ .
+
+[ $# -eq 1 ] && cmake -DCMAKE_BUILD_TYPE=Release -G Ninja ..
+
+echo -e '\e[33m'
+echo "cd $d/b"
+echo 'cmake -DCMAKE_BUILD_TYPE=Release -G Ninja ..'
+echo './hi input/'
+echo './test.sh'
+echo './update-reference-data.sh <lang>'
+echo

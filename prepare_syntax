@@ -1,0 +1,15 @@
+#!/bin/bash
+
+d=~/rawdisk2/sh
+dhi="$d/org.kde.syntax-highlighting"
+
+if [ ! -d "$dhi" ] ; then
+  mkdir -p "$dhi/syntax" "$dhi/themes"
+  cp ~/game/org.kde.syntax-highlighting/themes/my.theme "$dhi/themes"
+fi
+
+base="$(realpath "$(dirname "$0")")"
+base="${base%/*}"
+for f in "$@"; do
+  ln -s "$base/data/syntax/$f.xml" "$dhi/syntax"
+done
