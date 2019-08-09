@@ -7,7 +7,11 @@ local ctxonly = false
 local exclude = nil
 local include = nil
 function usage()
-  print(arg[0] .. ' [-h] [-c] [-i luargx_include_ctx] [-e luargx_exclude_ctx] kate_syntax.xml')
+  print(arg[0] .. [=[ [-h] [-c] [-i lua_pattern] [-e lua_pattern] kate_syntax.xml
+
+  -c  context only
+  -i  include context
+  -e  exclude context]=])
   os.exit(1)
 end
 for opt, arg in getopt("hce:i:", ...) do
