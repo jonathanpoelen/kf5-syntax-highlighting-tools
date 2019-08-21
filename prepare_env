@@ -44,10 +44,19 @@ echo '#!/bin/sh
 XDG_DATA_DIRS='"$d"' RLWRAP_HOME='"$d"' rlwrap vt-kate-syntax-highlighter -ctMy\ Breeze\ Dark -us "$@"' > ihi.sh
 
 echo '#!/bin/sh
-XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/vt-kate-syntax-highlighter -cntMy\ Breeze\ Dark "$@"' > thi.sh
+XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/vt-kate-syntax-highlighter -cntMy\ Breeze\ Dark "$@"' > nhi.sh
 
 echo '#!/bin/sh
-XDG_DATA_DIRS='"$d"' RLWRAP_HOME='"$d"' rlwrap ~/game/ksyntax-trace/vt-kate-syntax-highlighter -cntMy\ Breeze\ Dark -us "$@"' > tihi.sh
+XDG_DATA_DIRS='"$d"' RLWRAP_HOME='"$d"' rlwrap ~/game/ksyntax-trace/vt-kate-syntax-highlighter -cntMy\ Breeze\ Dark -nus "$@"' > nihi.sh
+
+echo '#!/bin/sh
+XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/vt-kate-syntax-highlighter-full -cxtMy\ Breeze\ Dark "$@"' > thi.sh
+
+echo '#!/bin/sh
+XDG_DATA_DIRS='"$d"' RLWRAP_HOME='"$d"' rlwrap ~/game/ksyntax-trace/vt-kate-syntax-highlighter-full -cntMy\ Breeze\ Dark -xus "$@"' > tihi.sh
+
+echo '#!/bin/sh
+XDG_DATA_DIRS='"$d"' kate "$@"' > kate.sh
 
 echo '#!/bin/sh
 if [ $# -eq 1 ]; then
@@ -56,7 +65,7 @@ else
   ninja && XDG_DATA_DIRS='"$d"' ctest --output-on-failure
 fi' > test.sh
 
-chmod +x update-reference-data.sh hi.sh ihi.sh thi.sh tihi.sh test.sh
+chmod +x update-reference-data.sh hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh test.sh kate.sh
 
 ln -s "$base"/autotests/input/ "$base"/data/syntax/ .
 
