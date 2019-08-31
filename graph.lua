@@ -92,6 +92,21 @@ if ctxonly then
   return 0
 end
 
+do
+  local lpeg = require'lpeg'
+  local P = lpeg.P
+  local C = lpeg.C
+  local S = lpeg.S
+  local Cf = lpeg.Cf
+  local Cc = lpeg.Cc
+  local Cs = lpeg.Cs
+  local Ct = lpeg.Ct
+  _countpop = Cf((P'#pop' * Cc(1))^1, function(a,b) return a+b end)
+  _wordwap = Ct(Cc('') * C(P(40) + P(1)^1)^0)
+  _quote = Cs((S'"' / '\\"' + S'\\' / '\\\\' + 1)^0)
+  _jumptxt = (1 - S'!')^1 * '!' * C(P(1)^1)
+end
+
 local sharp = string.byte('#',1)
 
 local k
@@ -103,15 +118,23 @@ function stringifyattrs(t, attrs)
   local sattr
   local s = ''
   for k,v in pairs(t) do
-      if attrs[v] then
-          sattr = attrs[v]
-          if #sattr > 40 then
-              sattr = sattr:gsub('(.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?)', '\n%1') .. '\n'
-          end
-          s = s .. '  ' .. v .. ':' .. sattr:gsub("\\", "\\\\"):gsub('"', '\\"')
+    if attrs[v] then
+      sattr = attrs[v]
+      if #sattr > 40 then
+        sattr = table.concat(_wordwap:match(sattr),'\n')
       end
+      s = s .. '  ' .. v .. ':' .. _quote:match(sattr)
+    end
   end
   return s
+end
+
+function labelize(name)
+  local n = _countpop:match(name)
+  if n and n > 1 then
+    return string.format('#pop(%d)%s', n, name:sub(n * 4 + 1))
+  end
+  return name
 end
 
 print('digraph G {')
@@ -151,7 +174,7 @@ for ictx,ctx in pairs(ctxs.children) do
         print('    "' .. name .. '" -> "' .. ctxname .. '" [color=dodgerblue3];')
       elseif rule.attrs.context and rule.attrs.context:byte(1) == sharp then
         print('    "' .. name .. '" -> "' .. ctxname .. '-' .. rule.attrs.context .. '" [color=' .. color .. '];')
-        print('    "' .. ctxname .. '-' .. rule.attrs.context .. '" [label="' .. rule.attrs.context .. '"];')
+        print('    "' .. ctxname .. '-' .. rule.attrs.context .. '" [label="' .. labelize(rule.attrs.context) .. '"];')
       end
     end
 
@@ -161,7 +184,7 @@ for ictx,ctx in pairs(ctxs.children) do
     elseif fallthroughCtx:byte(1) == sharp then
       local fallthroughNameCtx = ctxname .. '-' .. fallthroughCtx
       print('    "' .. name .. '" -> "' .. fallthroughNameCtx .. '" [style=dashed,color=' .. color .. '];')
-      print('    "' .. fallthroughNameCtx .. '" [label="' .. fallthroughCtx .. '"];')
+      print('    "' .. fallthroughNameCtx .. '" [label="' .. labelize(fallthroughCtx) .. '"];')
     end
 
     local endCtx = ctx.attrs.lineEndContext
@@ -170,14 +193,14 @@ for ictx,ctx in pairs(ctxs.children) do
     elseif endCtx:byte(1) == sharp then
       local lineEndCtx = ctxname .. '-' .. endCtx
       print('    "' .. ctxname .. '" -> "' .. lineEndCtx .. '" [style=dotted,color=blue];')
-      print('    "' .. lineEndCtx .. '" [label="' .. endCtx .. '"];')
+      print('    "' .. lineEndCtx .. '" [label="' .. labelize(endCtx) .. '"];')
     end
 
     print('  }')
 
     if fallthroughCtx then
       if fallthroughCtx:byte(1) == sharp then
-        local lastCtx = fallthroughCtx:match('!(.*)')
+        local lastCtx = _jumptxt:match(fallthroughCtx)
         if lastCtx then
           print('  "' .. ctxname .. '-' .. fallthroughCtx .. '" -> "' .. lastCtx .. '" [style=dashed,color=' .. color .. '];')
         end
@@ -187,7 +210,7 @@ for ictx,ctx in pairs(ctxs.children) do
     end
 
     if endCtx:byte(1) == sharp then
-      local lastCtx = endCtx:match('!(.*)')
+      local lastCtx = _jumptxt:match(endCtx)
       if lastCtx then
         print('  "' .. ctxname .. '-' .. endCtx .. '" -> "' .. lastCtx .. '" [style=dotted,color=' .. color .. '];')
       end
@@ -200,7 +223,7 @@ for ictx,ctx in pairs(ctxs.children) do
         if rule.attrs.context:byte(1) ~= sharp then
           print('  "' .. ctxname .. '-' .. irule .. '-' .. rule.tag .. '" -> "' .. rule.attrs.context .. '" [color=' .. color .. '];')
         else
-          local bindctxname = rule.attrs.context:match('!(.*)')
+          local bindctxname = _jumptxt:match(rule.attrs.context)
           if bindctxname then
             local name = ctxname .. '-' .. rule.attrs.context
             print('  "' .. name .. '" -> "' .. bindctxname .. '" [color=' .. color .. '];')
