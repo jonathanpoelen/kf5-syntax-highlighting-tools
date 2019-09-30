@@ -8,8 +8,7 @@ if [ ! -d "$dhi" ] ; then
   cp ~/game/org.kde.syntax-highlighting/themes/my.theme "$dhi/themes"
 fi
 
-base="$(realpath "$(dirname "$0")")"
-base="${base%/*}"
+base=$PWD
 for f in "$@"; do
-  ln -s "$base/data/syntax/$f.xml" "$dhi/syntax"
+  [ -f "$base/data/syntax/$f.xml" ] && ln -s "$base/data/syntax/$f.xml" "$dhi/syntax" || echo "$f" error
 done
