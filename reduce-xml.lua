@@ -8,6 +8,7 @@ end
 lpeg = require'lpeg'
 local P = lpeg.P
 local S = lpeg.S
+local R = lpeg.R
 
 local After = function(p) p=P(p) return (1 - p)^0 * p end
 
@@ -15,33 +16,53 @@ local ws = S'\t \n'
 local ws0 = ws^0
 local ws1 = ws^1
 local ws0r = ws0/''
-local ws1r = ws1/''
-local str = '"' * After'"'
-local ws1s = ws1 / ' ' + str
-local noclose = (1 - S'>')
+local ws1r = ws1/' '
+local str = '"' * After'"' + "'" * After"'"
+local word = (R('az','AZ','09') + S'_-')^1
+local eq = ws0r * '=' * ws0r
+local attr = word * eq * str
+local comment = P'<!--' * After('-->') / ''
+local blank = (ws1 + comment)^1 / ''
+local argsdoctype = (ws1r * (str + word))^1 * ws0r
+
+local VAttr = function(p) p=P(p) return eq * ('"' * p * '"' + "'" * p * "'") end
+
 -- TODO remove attribute with lookAhead=1
 -- TODO remove attribute if same as context attribute
-local reduce = lpeg.Cs(ws0r *
-  ( '<' *
-    ( '!--' * After'-->' / ''
-    + '!' * (ws1s + (1 - S'>['))^0 *
-      ( S'>'
-      + S'['
-        * (ws0r * '<' * (ws1s + noclose)^1 * '>')^0
-        * ws0r
-      )
-    + ( ws0 * '/' / '/'
-      + ws0 * (P'fallthrough="' * (P'true' + '1') * '"' + P'context="#stay"') / ''
-      + ws1s
-      + (P'lookAhead' + 'casesensitive' + 'firstNonSpace'
-         +'insensitive' + 'spellChecking' + 'dynamic'
-         +'bold' + 'italic' + 'underline'
-        )
-        * '="' * (P'true' / '1' + P'false' / '0') * '"'
-      + noclose
-      )^1
-    ) * ws0r
-  + ws1r
+local reduce = lpeg.Cs(
+  P'\xEF\xBB\xBF'^-1 / '' -- BOM
+
+* ( '<?' * word * (ws1r * attr)^0 * ws0r * '?>' + blank )^0
+
+* ( '<!DOCTYPE' * argsdoctype
+  * ( '[' * (blank + '<!ENTITY' * argsdoctype * '>')^0 * ']' )^-1
+  * ws0r
+  * '>'
+  )^-1
+
+* ( blank
+  * '<'
+  * ( '/' * word
+    + word
+    * ( ws0
+        * ( 'fallthrough' * VAttr(P'true' + '1')
+          + 'context' * VAttr('#stay')
+          + 'indentationsensitive' * VAttr(P'0' + 'false')
+          ) / ''
+      + ws1r
+        * ( ( P'lookAhead' + 'casesensitive' + 'firstNonSpace'
+            + 'insensitive' + 'spellChecking' + 'dynamic'
+            + 'bold' + 'italic' + 'underline'
+            + 'indentationsensitive'
+            )
+            * VAttr(P'true' / '1' + P'false' / '0')
+          + attr
+          )
+      )^0
+    * ws0r
+    * P'/'^-1
+    )
+  * '>'
   + 1
   )^0
 )
