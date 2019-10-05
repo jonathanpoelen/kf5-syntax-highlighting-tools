@@ -10,6 +10,7 @@ local P = lpeg.P
 local S = lpeg.S
 local R = lpeg.R
 local Cp = lpeg.Cp()
+local Cs = lpeg.Cs
 
 local After = function(p) p=P(p) return (1 - p)^0 * p end
 
@@ -26,7 +27,8 @@ local comment = P'<!--' * After('-->') / ''
 local blank = (ws1 + comment)^1 / ''
 local argsdoctype = (ws1r * (str + word))^1 * ws0r
 
-local VAttr = function(p) p=P(p) return eq * ('"' * p * '"' + "'" * p * "'") end
+local StrAs = function(p) p=P(p) return ('"' * p * '"' + "'" * p * "'") end
+local VAttr = function(p) return eq * StrAs(p) end
 
 local attrIgnoreFalse
 =P'lookAhead' + 'firstNonSpace' + 'dynamic'
@@ -49,8 +51,7 @@ end
 
 -- TODO remove attribute with lookAhead=1
 -- TODO remove attribute if same as context attribute
--- TODO casensitive if same as global casesensitive
-local reduce = lpeg.Cs(
+local reduce = Cs(
   P'\xEF\xBB\xBF'^-1 / '' -- BOM
 
 * ( '<?' * word * (ws1r * attr)^0 * ws0r * '?>' + blank )^0
@@ -67,7 +68,7 @@ local reduce = lpeg.Cs(
     * ( ws0
       * ( attrIgnoreTrue * VAttr(P'true' + '1')
         + 'context' * VAttr('#stay')
-        + 'weakDeliminator' * eq * (P'""' + "''")
+        + 'weakDeliminator' * VAttr(Cp)
         + attrIgnoreFalse * VAttr(P'0' + 'false')
         ) / ''
       + ws1r
@@ -85,6 +86,21 @@ local reduce = lpeg.Cs(
   )^0
 )
 
+function removeAttr(tag, attr)
+  return Cs(
+    ( P'<'
+    * tag
+    * ( ws1 * attr / ''
+      + ws1 * word * '=' * str
+      )^0
+    * '/>'
+    + 1
+    )^0
+  )
+end
+
+local removeInsensitiveKw0 = removeAttr('keyword', 'insensitive=' * StrAs'0')
+local removeInsensitiveKw1 = removeAttr('keyword', 'insensitive=' * StrAs'1')
 
 local prefix = arg[1]
 local suffix = arg[2]
@@ -92,11 +108,15 @@ local suffix = arg[2]
 for _,filename in ipairs({table.unpack(arg, 3)}) do
   print(filename)
   f = io.open(filename)
-  content = f:read('*a')
+  content = f:read'*a'
   f:close()
-  f = io.open(prefix .. filename .. suffix, 'w')
+
   reset_state()
-  f:write(reduce:match(content))
+  content = reduce:match(content)
+  content = (state_casesensitive and removeInsensitiveKw0 or removeInsensitiveKw1):match(content)
   print(state_casesensitive)
+
+  f = io.open(prefix .. filename .. suffix, 'w')
+  f:write(content)
   f:close()
 end
