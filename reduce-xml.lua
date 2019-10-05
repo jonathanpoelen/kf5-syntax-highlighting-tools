@@ -11,10 +11,10 @@ local S = lpeg.S
 local R = lpeg.R
 local Cp = lpeg.Cp()
 local Cs = lpeg.Cs
+local Ct = lpeg.Ct
 local C = lpeg.C
 
 local After = function(p) p=P(p) return (1 - p)^0 * p end
-local CAfter = function(p) p=P(p) return C((1 - p)^0) * p end
 
 local ws = S'\t \n'
 local ws0 = ws^0
@@ -22,9 +22,9 @@ local ws1 = ws^1
 local ws0r = ws0/''
 local ws1r = ws1/' '
 local str = '"' * After'"' + "'" * After"'"
-local Cstr = '"' * CAfter'"' + "'" * CAfter"'"
 local word = (R('az','AZ','09') + S'_-')^1
-local eq = ws0r * '=' * ws0r
+local iseq = ws0 * '=' * ws0
+local eq = iseq/'='
 local attr = word * eq * str
 local comment = P'<!--' * After('-->') / ''
 local blank = (ws1 + comment)^1 / ''
@@ -33,6 +33,29 @@ local argsdoctype = (ws1r * (str + word))^1 * ws0r
 local StrAs = function(p) p=P(p) return ('"' * p * '"' + "'" * p * "'") end
 local VAttr = function(p) return eq * StrAs(p) end
 local bool = eq * (StrAs'true' / '"1"' + StrAs'false' / '"0"')
+
+local isTrue = StrAs(P'true' + '1')
+local isFalse = StrAs(P'false' + '0')
+
+local CAttr = Ct(ws1 * C(word) * iseq * C(str))
+local emptyAttr = word * iseq * (P'""' + "''")
+
+function isDefaultDeliminator(s)
+  if not s then
+    return false
+  end
+
+  local t1, t2 = {}, {}
+  s = s:gsub('&amp;','&')
+  for i=1,#s do
+    t1[s:sub(i,i)] = true
+  end
+  for k in pairs(t1) do
+    t2[#t2+1] = k
+  end
+  table.sort(t2)
+  return table.concat(t2) == '\t !%&()*+,-./:;<=>?[\\]^{|}~'
+end
 
 local attrIgnoreFalse
 =P'lookAhead' + 'firstNonSpace' + 'dynamic'
@@ -54,8 +77,68 @@ end
 
 local current_context_name
 
+function tokt(t)
+  local kt = {}
+  for _,v in ipairs(t) do
+    kt[v[1]] = v[2]
+  end
+  return kt
+end
+
+function kt2s(kt)
+  t = {}
+  for k,v in pairs(kt) do
+    t[#t+1] = ' '
+    t[#t+1] = k
+    t[#t+1] = '='
+    t[#t+1] = attrBool:match(k) and bool:match(v) or v
+  end
+
+  return table.concat(t)
+end
+
+function reduceKeywordsAttrs(t)
+  local kt = tokt(t)
+
+  if isDefaultDeliminator(kt['wordWrapDeliminator']) then
+     kt['wordWrapDeliminator'] = nil
+  end
+
+  for _,k in ipairs({'weakDeliminator', 'additionalDeliminator'}) do
+    if kt[k] == '""' or kt[k] == "''" then
+      kt[k] = nil
+    end
+  end
+
+  local casesensitive = kt['casesensitive']
+  if casesensitive then
+    if isTrue:match(casesensitive) then
+      kt['casesensitive'] = 1
+    else
+      state_casesensitive = false
+    end
+  end
+
+  return kt2s(kt)
+end
+
+function reduceAttrs(t)
+  local kt = tokt(t)
+
+  local lookAhead = kt['lookAhead']
+  if lookAhead and isTrue:match(lookAhead) then
+    kt['attribute'] = nil
+  else 
+    local attribute = kt['attribute']
+    if attribute and attribute:sub(2,-2) == current_context_name then
+      kt['attribute'] = nil
+    end
+  end
+
+  return kt2s(kt)
+end
+
 -- TODO noIndentationBasedFolding only with indentationBasedFolding
--- TODO remove attribute with lookAhead=1
 local reduce = Cs(
   P'\xEF\xBB\xBF'^-1 / '' -- BOM
 
@@ -67,14 +150,19 @@ local reduce = Cs(
   * '>'
   )^-1
 
-* ( '<'
-  * ( '/'
-    * ( P'context' * (Cp/function() current_context_name=nil end)
-      + word
-      )
+* (blank
+  + '<'
+  * ( '/' * word
+    + 'contexts'
 
-    + ( P'context'
-    * ( ws0 * 'fallthrough' * eq * str / '' )
+    + P'context'
+    * ( ws1
+      * ( 'fallthrough' * iseq * str
+        + 'lineEndContext' * iseq * StrAs'#stay'
+        + emptyAttr
+        )
+      / ''
+ 
       + ws1r
       * ( (P'dynamic' + 'noIndentationBasedFolding') * bool
         + P'name' * eq * (str / function(s) current_context_name=s:sub(2,-2) return s end)
@@ -82,31 +170,24 @@ local reduce = Cs(
         )
       )^0
 
+    + P'keywords' * (Ct((CAttr)^0) / reduceKeywordsAttrs) * '/'
+
     + word
-    * ( ws0
-      * ( attrIgnoreTrue * VAttr(P'true' + '1')
-        + 'context' * VAttr('#stay')
-        + 'weakDeliminator' * VAttr(Cp)
-        + attrIgnoreFalse * VAttr(P'0' + 'false')
-        ) / ''
-
-      + ws1 * P'attribute' * ws0 * '=' * ws0 * str / function(s) 
-          if  s:sub(2,-2) == current_context_name then print('remove', s) end
-          return s:sub(2,-2) == current_context_name and '' or ' attribute=' .. s
-        end
-
-      + ws1r
-      * ( 'casesensitive' * VAttr(P'false' / '0' + '0') * (Cp/function() state_casesensitive = false end)
-        + attrBool * bool
-        + attr
-        )
-      )^0
+    * (Ct(
+        ( ws1
+        * ( attrIgnoreTrue * iseq * isTrue
+          + attrIgnoreFalse * iseq * isFalse
+          + 'context' * iseq * StrAs'#stay'
+          + emptyAttr
+          )
+        + CAttr
+        )^0
+      ) / reduceAttrs)
     * ws0r
     * P'/'^-1
     )
   * '>'
-  + blank
-  + 1
+  + P(1) / '`'
   )^0
 )
 
@@ -114,7 +195,7 @@ function removeAttr(tag, attr)
   return Cs(
     ( P'<'
     * tag
-    * ( ws1 * attr / ''
+    * ( ws1 * word * iseq * str / ''
       + ws1 * word * '=' * str
       )^0
     * '/>'
@@ -129,8 +210,10 @@ local removeInsensitiveKw1 = removeAttr('keyword', 'insensitive="1"')
 local prefix = arg[1]
 local suffix = arg[2]
 
-for _,filename in ipairs({table.unpack(arg, 3)}) do
+for i=3,#arg do
+  filename = arg[i]
   print(filename)
+
   f = io.open(filename)
   content = f:read'*a'
   f:close()
@@ -138,7 +221,6 @@ for _,filename in ipairs({table.unpack(arg, 3)}) do
   reset_state()
   content = reduce:match(content)
   content = (state_casesensitive and removeInsensitiveKw0 or removeInsensitiveKw1):match(content)
-  print(state_casesensitive)
 
   f = io.open(prefix .. filename .. suffix, 'w')
   f:write(content)
