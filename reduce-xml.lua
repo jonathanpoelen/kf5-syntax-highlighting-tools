@@ -32,12 +32,13 @@ local argsdoctype = (ws1r * (str + word))^1 * ws0r
 
 local StrAs = function(p) p=P(p) return ('"' * p * '"' + "'" * p * "'") end
 local VAttr = function(p) return eq * StrAs(p) end
-local bool = eq * (StrAs'true' / '"1"' + StrAs'false' / '"0"')
+local bool = StrAs'true' / '"1"' + StrAs'false' / '"0"'
 
 local isTrue = StrAs(P'true' + '1')
 local isFalse = StrAs(P'false' + '0')
 
-local CAttr = Ct(ws1 * C(word) * iseq * C(str))
+local CAttrOnly = Ct(C(word) * iseq * C(str))
+local CAttr = ws1 * CAttrOnly
 local emptyAttr = word * iseq * (P'""' + "''")
 
 function isDefaultDeliminator(s)
@@ -60,11 +61,11 @@ end
 local attrIgnoreFalse
 =P'lookAhead' + 'firstNonSpace' + 'dynamic'
 + 'bold' + 'italic' + 'underline'
-+ 'spellChecking'
 + 'indentationsensitive'
 
 local attrIgnoreTrue
 =P'casesensitive'
++ 'spellChecking'
 
 local attrBool
 = attrIgnoreFalse + attrIgnoreTrue
@@ -113,7 +114,7 @@ function reduceKeywordsAttrs(t)
   local casesensitive = kt['casesensitive']
   if casesensitive then
     if isTrue:match(casesensitive) then
-      kt['casesensitive'] = 1
+      kt['casesensitive'] = '"1"'
     else
       state_casesensitive = false
     end
@@ -162,15 +163,19 @@ local reduce = Cs(
         + emptyAttr
         )
       / ''
- 
+
       + ws1r
-      * ( (P'dynamic' + 'noIndentationBasedFolding') * bool
-        + P'name' * eq * (str / function(s) current_context_name=s:sub(2,-2) return s end)
+      * ( (P'dynamic' + 'noIndentationBasedFolding') * eq * bool
+        + P'attribute' * eq * (str / function(s) current_context_name=s:sub(2,-2) return s end)
         + attr
         )
       )^0
+    * ws0r
+    * ( P'/'
+      + '>' * ws0 * '</context' / '/'
+      )^-1
 
-    + P'keywords' * (Ct((CAttr)^0) / reduceKeywordsAttrs) * '/'
+    + P'keywords' * (Ct((CAttr)^0) / reduceKeywordsAttrs) * ws0r * '/'
 
     + word
     * (Ct(
@@ -179,15 +184,15 @@ local reduce = Cs(
           + attrIgnoreFalse * iseq * isFalse
           + 'context' * iseq * StrAs'#stay'
           + emptyAttr
+          + CAttrOnly
           )
-        + CAttr
         )^0
       ) / reduceAttrs)
     * ws0r
     * P'/'^-1
     )
   * '>'
-  + P(1) / '`'
+  + 1
   )^0
 )
 
@@ -195,8 +200,8 @@ function removeAttr(tag, attr)
   return Cs(
     ( P'<'
     * tag
-    * ( ws1 * word * iseq * str / ''
-      + ws1 * word * '=' * str
+    * ( ws * attr / ''
+      + ws * word * '=' * str
       )^0
     * '/>'
     + 1
