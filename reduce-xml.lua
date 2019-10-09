@@ -79,20 +79,27 @@ end
 local current_context_name
 
 function tokt(t)
-  local kt = {}
+  local kt, keys = {}, {}
   for _,v in ipairs(t) do
+    if not kt[v[1]] then
+      keys[#keys+1] = v[1]
+    end
     kt[v[1]] = v[2]
   end
+  kt[0] = keys
   return kt
 end
 
 function kt2s(kt)
-  t = {}
-  for k,v in pairs(kt) do
-    t[#t+1] = ' '
-    t[#t+1] = k
-    t[#t+1] = '='
-    t[#t+1] = attrBool:match(k) and bool:match(v) or v
+  local t, k, v = {}
+  for _,k in ipairs(kt[0]) do
+    v = kt[k]
+    if v then
+      t[#t+1] = ' '
+      t[#t+1] = k
+      t[#t+1] = '='
+      t[#t+1] = attrBool:match(k) and bool:match(v) or v
+    end
   end
 
   return table.concat(t)
