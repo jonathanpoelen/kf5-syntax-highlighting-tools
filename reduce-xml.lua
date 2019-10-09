@@ -165,11 +165,14 @@ local reduce = Cs(
 
     + P'context'
     * ( ws1
-      * ( 'fallthrough' * iseq * str
-        + 'lineEndContext' * iseq * StrAs'#stay'
+      * ( --[=[ TODO 'fallthrough' * iseq * str -- since 5.62
+        +]=] 'lineEndContext' * iseq * StrAs'#stay'
         + emptyAttr
         )
       / ''
+
+      -- TODO until 5.62
+      + ws1 * 'fallthrough' * iseq * str / ' fallthrough="1"'
 
       + ws1r
       * ( (P'dynamic' + 'noIndentationBasedFolding') * eq * bool
