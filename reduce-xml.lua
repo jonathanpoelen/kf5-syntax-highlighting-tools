@@ -136,11 +136,11 @@ function reduceAttrs(t)
   local lookAhead = kt['lookAhead']
   if lookAhead and isTrue:match(lookAhead) then
     kt['attribute'] = nil
-  else 
-    local attribute = kt['attribute']
-    if attribute and attribute:sub(2,-2) == current_context_name then
-      kt['attribute'] = nil
-    end
+  -- else
+  --   local attribute = kt['attribute']
+  --   if attribute and attribute:sub(2,-2) == current_context_name then
+  --     kt['attribute'] = nil
+  --   end
   end
 
   return kt2s(kt)
@@ -185,6 +185,7 @@ local reduce = Cs(
       + '>' * ws0 * '</context' / '/'
       )^-1
 
+    -- TODO remove if empty
     + P'keywords' * (Ct((CAttr)^0) / reduceKeywordsAttrs) * ws0r * '/'
 
     + word
