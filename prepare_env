@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
@@ -11,7 +11,7 @@ base="$PWD"
 d=~/rawdisk2/sh
 
 dhi="$d/org.kde.syntax-highlighting"
-mkdir -p "$dhi" "$dhi/themes"
+mkdir -p "$d/b" "$d/src/lib" "$dhi/themes"
 cp ~/game/org.kde.syntax-highlighting/themes/my.theme "$dhi/themes"
 
 if [ $# -eq 0 ]; then
@@ -23,13 +23,23 @@ else
   done
 fi
 
-ln -s "$base/"* "$d"
+shopt -s extglob
+
+ln -s "$base/"!(src|CMakeLists.txt) "$d"
+ln -s "$base/src/"!(lib|CMakeLists.txt) "$d/src"
+ln -s "$base/src/lib/"!(CMakeLists.txt) "$d/src/lib"
+
 cd "$d"
-rm CMakeLists.txt
-sed 's#find_package(ECM 5[^ ]\+ REQUIRED NO_MODULE)#find_package(ECM 5.50.0 REQUIRED NO_MODULE)#;/include(ECMAddQch)/d' \
+
+sed 's#find_package(ECM 5[^ ]\+ REQUIRED NO_MODULE)#find_package(ECM 5.66.0 REQUIRED NO_MODULE)#;/include(ECMAddQch)/d' \
   "$base"/CMakeLists.txt > CMakeLists.txt
 
-mkdir b
+sed '/^ecm_qt_install_logging_categories/,/^)/d' \
+  "$base"/src/CMakeLists.txt > src/CMakeLists.txt
+
+sed '/^    DESCRIPTION "Syntax Highlighting"/d;/^    EXPORT KSYNTAXHIGHLIGHTING/d' \
+  "$base"/src/lib/CMakeLists.txt > src/lib/CMakeLists.txt
+
 cd b
 
 echo '#!/bin/sh
