@@ -6,6 +6,7 @@ set -e
 # base="${base%/*}"
 # cd "$base"
 
+cd "$(dirname $0)"/../syntax-highlighting
 base="$PWD"
 
 d=~/rawdisk2/sh
@@ -14,13 +15,22 @@ dhi="$d/org.kde.syntax-highlighting"
 mkdir -p "$d/b" "$d/src/lib" "$dhi/themes"
 cp ~/game/org.kde.syntax-highlighting/themes/my.theme "$dhi/themes"
 
-if [ $# -eq 0 ]; then
+errcode=0
+if [[ $# -eq 0 ]]; then
   ln -s "$base/data/syntax/" "$dhi"
 else
   mkdir -p "$dhi/syntax"
+  cd data/syntax
   for f in "$@"; do
-    [ -f "$base/data/syntax/$f.xml" ] && ln -s "$base/data/syntax/$f.xml" "$dhi/syntax" || echo "$f" error
+    if [[ ! -f "$f.xml" ]]; then
+      echo "$f: file not found"
+      ((++errcode))
+      continue
+    fi
+
+    ln -s "$PWD/$f.xml" "$dhi/syntax" || ((++errcode))
   done
+  cd ../..
 fi
 
 shopt -s extglob
@@ -77,13 +87,20 @@ echo '#!/bin/sh
 XDG_DATA_DIRS='"$d"' kate "$@"' > kate.sh
 
 echo '#!/bin/sh
+xmllint --noout --schema '"$base"'/data/schema/language.xsd "$@"' > validatehl.sh
+
+echo '#!/bin/sh
+cmake -DCMAKE_BUILD_TYPE=Release -G Ninja ..' > build.sh
+
+echo '#!/bin/sh
 if [ $# -eq 1 ]; then
   ninja && XDG_DATA_DIRS='"$d"' ctest --output-on-failure --rerun-failed
 else
   ninja && XDG_DATA_DIRS='"$d"' ctest --output-on-failure
 fi' > test.sh
 
-chmod +x update-reference-data.sh hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh test.sh kate.sh
+chmod +x update-reference-data.sh build.sh test.sh kate.sh validatehl.sh \
+  hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh
 
 ln -s "$base"/autotests/input/ "$base"/data/syntax/ .
 
@@ -96,3 +113,5 @@ echo './hi input/'
 echo './test.sh'
 echo './update-reference-data.sh <lang>'
 echo
+
+exit $errcode

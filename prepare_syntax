@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 d=~/rawdisk2/sh
 dhi="$d/org.kde.syntax-highlighting"
@@ -8,7 +8,16 @@ if [ ! -d "$dhi" ] ; then
   cp ~/game/org.kde.syntax-highlighting/themes/my.theme "$dhi/themes"
 fi
 
-base=$PWD
+cd "$(dirname $0)"/../syntax-highlighting/data/syntax
+typeset -i errcode=0
 for f in "$@"; do
-  [ -f "$base/data/syntax/$f.xml" ] && ln -s "$base/data/syntax/$f.xml" "$dhi/syntax" || echo "$f" error
+  if [[ ! -f "$f.xml" ]]; then
+    echo "$f: file not found"
+    ((++errcode))
+    continue
+  fi
+
+  ln -s "$PWD/$f.xml" "$dhi/syntax" || ((++errcode))
 done
+
+exit $errcode
