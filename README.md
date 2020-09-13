@@ -1,9 +1,5 @@
 # graph.sh
 
-```bash
-./graph.sh $KFS_SYNTAX_HIGHLIGHTING/data/syntax/xxxx.xml | dot -Tpng -o output.png
-```
-
 # reduce-xml.lua
 
 ```bash
