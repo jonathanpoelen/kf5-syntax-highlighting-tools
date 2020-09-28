@@ -66,25 +66,28 @@ for name in "$@" ; do
 done' > update-reference-data.sh
 
 echo '#!/bin/sh
-XDG_DATA_DIRS='"$d"' vt-kate-syntax-highlighter -ctMy\ Breeze\ Dark "$@"' > hi.sh
+XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors -tMy\ Breeze\ Dark "$@"' > hi.sh
 
 echo '#!/bin/sh
-XDG_DATA_DIRS='"$d"' vt-kate-syntax-highlighter -ctMy\ Breeze\ Dark -us "$@"' > ihi.sh
+XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors -tMy\ Breeze\ Dark --stdin -s "$@"' > ihi.sh
 
 echo '#!/bin/sh
-XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/vt-kate-syntax-highlighter -cntMy\ Breeze\ Dark "$@"' > nhi.sh
+XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors -ntMy\ Breeze\ Dark "$@"' > nhi.sh
 
 echo '#!/bin/sh
-XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/vt-kate-syntax-highlighter -cntMy\ Breeze\ Dark -nus "$@"' > nihi.sh
+XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors --syntax-trace=format -tMy\ Breeze\ Dark --stdin -s "$@"' > nihi.sh
 
 echo '#!/bin/sh
-XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/vt-kate-syntax-highlighter-full -cxtMy\ Breeze\ Dark "$@"' > thi.sh
+XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors --syntax-trace=format --syntax-trace=context -tMy\ Breeze\ Dark "$@"' > thi.sh
 
 echo '#!/bin/sh
-XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/vt-kate-syntax-highlighter-full -cntMy\ Breeze\ Dark -xus "$@"' > tihi.sh
+XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors --syntax-trace=format --syntax-trace=context -tMy\ Breeze\ Dark --stdin -s "$@"' > tihi.sh
 
 echo '#!/bin/sh
-RLWRAP_HOME='"$d"' rlwrap "$@"' > rlwrap.sh
+while read l ; do echo "$l" | "$@" ; done' > unbuffered.sh
+
+echo '#!/bin/sh
+RLWRAP_HOME='"$d"' rlwrap ./unbuffered.sh "$@"' > rlwrap.sh
 
 echo '#!/bin/sh
 XDG_DATA_DIRS='"$d"' kate "$@"' > kate.sh
@@ -106,7 +109,7 @@ else
 fi' > test.sh
 
 chmod +x update-reference-data.sh build.sh test.sh kate.sh validatehl.sh rlwrap.sh \
-  hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh final.sh
+  hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh final.sh unbuffered.sh
 
 ln -s "$base"/autotests/input/ "$base"/data/syntax/ .
 
