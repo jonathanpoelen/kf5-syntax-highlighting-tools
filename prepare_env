@@ -66,23 +66,25 @@ for name in "$@" ; do
   cp folding.out/$name.fold '"$base"'/autotests/folding/
 done' > update-reference-data.sh
 
-echo '#!/usr/bin/env sh
-XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors -tMy\ Breeze\ Dark "$@"' > hi.sh
+vtkate="XDG_DATA_DIRS='"$d"' LD_PRELOAD=~/game/ksyntax-trace/libKF5SyntaxHighlighting.so ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors -t'My Breeze Dark'"
 
 echo '#!/usr/bin/env sh
-XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors -tMy\ Breeze\ Dark --stdin -s "$@"' > ihi.sh
+'"$vtkate"' "$@"' > hi.sh
 
 echo '#!/usr/bin/env sh
-XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors -ntMy\ Breeze\ Dark "$@"' > nhi.sh
+'"$vtkate"' --stdin -s "$@"' > ihi.sh
 
 echo '#!/usr/bin/env sh
-XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors --syntax-trace=format -tMy\ Breeze\ Dark --stdin -s "$@"' > nihi.sh
+'"$vtkate"' --syntax-trace=format "$@"' > nhi.sh
 
 echo '#!/usr/bin/env sh
-XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors --syntax-trace=format --syntax-trace=context -tMy\ Breeze\ Dark "$@"' > thi.sh
+'"$vtkate"' --syntax-trace=format --stdin -s "$@"' > nihi.sh
 
 echo '#!/usr/bin/env sh
-XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors --syntax-trace=format --syntax-trace=context -tMy\ Breeze\ Dark --stdin -s "$@"' > tihi.sh
+'"$vtkate"' --syntax-trace=format --syntax-trace=context "$@"' > thi.sh
+
+echo '#!/usr/bin/env sh
+'"$vtkate"' --syntax-trace=format --syntax-trace=context --stdin -s "$@"' > tihi.sh
 
 echo '#!/usr/bin/env sh
 while read l ; do echo "$l" | "$@" ; done' > unbuffered.sh
@@ -97,7 +99,7 @@ echo '#!/usr/bin/env sh
 xmllint --noout --schema '"$base"'/data/schema/language.xsd "$@"' > validatehl.sh
 
 echo '#!/usr/bin/env sh
-cmake -DCMAKE_BUILD_TYPE=Release "$@" -G Ninja ..' > build.sh
+cmake -DCMAKE_BUILD_TYPE=Release -DKSYNTAXHIGHLIGHTING_USE_GUI=OFF "$@" -G Ninja ..' > build.sh
 
 echo '#!/usr/bin/env sh
 ./validatehl.sh syntax/* && ninja clean && ninja rebuild_cache && ./test.sh' > final.sh
