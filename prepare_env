@@ -6,7 +6,8 @@ set -e
 # base="${base%/*}"
 # cd "$base"
 
-cd "$(dirname $0)"/../syntax-highlighting
+dtool=$(dirname $0)
+cd "$dtool"/../syntax-highlighting
 base="$PWD"
 
 d=~/rawdisk2/sh
@@ -52,7 +53,7 @@ sed '/^    DESCRIPTION "Syntax Highlighting"/d;/^    EXPORT KSYNTAXHIGHLIGHTING/
 
 cd b
 
-echo '#!/bin/sh
+echo '#!/usr/bin/env sh
 set -e
 cd '"$PWD"'/autotests
 for name in "$@" ; do
@@ -65,51 +66,57 @@ for name in "$@" ; do
   cp folding.out/$name.fold '"$base"'/autotests/folding/
 done' > update-reference-data.sh
 
-echo '#!/bin/sh
+echo '#!/usr/bin/env sh
 XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors -tMy\ Breeze\ Dark "$@"' > hi.sh
 
-echo '#!/bin/sh
+echo '#!/usr/bin/env sh
 XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors -tMy\ Breeze\ Dark --stdin -s "$@"' > ihi.sh
 
-echo '#!/bin/sh
+echo '#!/usr/bin/env sh
 XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors -ntMy\ Breeze\ Dark "$@"' > nhi.sh
 
-echo '#!/bin/sh
+echo '#!/usr/bin/env sh
 XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors --syntax-trace=format -tMy\ Breeze\ Dark --stdin -s "$@"' > nihi.sh
 
-echo '#!/bin/sh
+echo '#!/usr/bin/env sh
 XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors --syntax-trace=format --syntax-trace=context -tMy\ Breeze\ Dark "$@"' > thi.sh
 
-echo '#!/bin/sh
+echo '#!/usr/bin/env sh
 XDG_DATA_DIRS='"$d"' ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors --syntax-trace=format --syntax-trace=context -tMy\ Breeze\ Dark --stdin -s "$@"' > tihi.sh
 
-echo '#!/bin/sh
+echo '#!/usr/bin/env sh
 while read l ; do echo "$l" | "$@" ; done' > unbuffered.sh
 
-echo '#!/bin/sh
+echo '#!/usr/bin/env sh
 RLWRAP_HOME='"$d"' rlwrap ./unbuffered.sh "$@"' > rlwrap.sh
 
-echo '#!/bin/sh
+echo '#!/usr/bin/env sh
 XDG_DATA_DIRS='"$d"' kate "$@"' > kate.sh
 
-echo '#!/bin/sh
+echo '#!/usr/bin/env sh
 xmllint --noout --schema '"$base"'/data/schema/language.xsd "$@"' > validatehl.sh
 
-echo '#!/bin/sh
-cmake -DCMAKE_BUILD_TYPE=Release "$@" -G Ninja .. && ./test.sh' > build.sh
+echo '#!/usr/bin/env sh
+cmake -DCMAKE_BUILD_TYPE=Release "$@" -G Ninja ..' > build.sh
 
-echo '#!/bin/sh
+echo '#!/usr/bin/env sh
 ./validatehl.sh syntax/* && ninja clean && ninja rebuild_cache && ./test.sh' > final.sh
 
-echo '#!/bin/sh
+echo '#!/usr/bin/env sh
 if [[ $# -eq 1 ]]; then
   ninja && XDG_DATA_DIRS='"$d"' ctest --output-on-failure --rerun-failed
 else
   ninja && XDG_DATA_DIRS='"$d"' ctest --output-on-failure
 fi' > test.sh
 
+echo '#!/usr/bin/env sh
+'\'"$dtool"\''/increase_version.lua $(
+  cd '\'"$base"\''
+  git diff --stat @..master | sed -E '\''s#^ data/(syntax/[^.]+.xml).*#\1#;t;d'\''
+)' > increase_versions.sh
+
 chmod +x update-reference-data.sh build.sh test.sh kate.sh validatehl.sh rlwrap.sh \
-  hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh final.sh unbuffered.sh
+  hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh final.sh unbuffered.sh increase_versions.sh
 
 ln -s "$base"/autotests/input/ "$base"/data/syntax/ .
 
