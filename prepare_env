@@ -57,11 +57,13 @@ echo '#!/usr/bin/env sh
 set -e
 cd '"$PWD"'/autotests
 for name in "$@" ; do
-  if [ -r output/highlight.$name.ref ]; then
+  if [[ -r output/highlight.$name.ref ]]; then
     name=highlight.$name
+  elif [[ -r output/test.$name.ref ]]; then
+    name=test.$name
   fi
   echo copy $name
-  cp output/$name.ref '"$base"'/autotests/reference/
+  cp output/$name.ref '"$base"'/autotests/reference/ || continue
   cp html.output/$name.html html.output/$name.dark.html '"$base"'/autotests/html/
   cp folding.out/$name.fold '"$base"'/autotests/folding/
 done' > update-reference-data.sh
@@ -81,10 +83,16 @@ echo '#!/usr/bin/env sh
 '"$vtkate"' --syntax-trace=format --stdin -s "$@"' > nihi.sh
 
 echo '#!/usr/bin/env sh
-'"$vtkate"' --syntax-trace=format --syntax-trace=context "$@"' > thi.sh
+'"$vtkate"' --syntax-trace=format --syntax-trace=stackSize "$@"' > shi.sh
 
 echo '#!/usr/bin/env sh
-'"$vtkate"' --syntax-trace=format --syntax-trace=context --stdin -s "$@"' > tihi.sh
+'"$vtkate"' --syntax-trace=format --syntax-trace=stackSize --stdin -s "$@"' > sihi.sh
+
+echo '#!/usr/bin/env sh
+'"$vtkate"' --syntax-trace=format --syntax-trace=context --syntax-trace=stackSize "$@"' > thi.sh
+
+echo '#!/usr/bin/env sh
+'"$vtkate"' --syntax-trace=format --syntax-trace=context --syntax-trace=stackSize --stdin -s "$@"' > tihi.sh
 
 echo '#!/usr/bin/env sh
 while read l ; do echo "$l" | "$@" ; done' > unbuffered.sh
@@ -117,8 +125,15 @@ echo '#!/usr/bin/env sh
   git diff --stat @..master | sed -E '\''s#^ data/(syntax/[^.]+.xml).*#\1#;t;d'\''
 )' > increase_versions.sh
 
+echo '#!/usr/bin/env sh
+XDG_DATA_DIRS='"$d"' ./bin/highlighter_benchmark' > bench_hi.sh
+
+echo '#!/usr/bin/env sh
+XDG_DATA_DIRS='"$d"' ./bin/repository_benchmark' > bench_repo.sh
+
 chmod +x update-reference-data.sh build.sh test.sh kate.sh validatehl.sh rlwrap.sh \
-  hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh final.sh unbuffered.sh increase_versions.sh
+  hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh shi.sh sihi.sh final.sh unbuffered.sh \
+  increase_versions.sh bench_hi.sh bench_repo.sh
 
 ln -s "$base"/autotests/input/ "$base"/data/syntax/ .
 
