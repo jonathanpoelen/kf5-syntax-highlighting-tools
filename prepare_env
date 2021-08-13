@@ -13,11 +13,10 @@ base="$PWD"
 d=~/rawdisk2/sh
 
 dhi="$d/org.kde.syntax-highlighting"
-mkdir -p "$d/b" "$d/src/lib" "$dhi/themes"
-cp ~/game/org.kde.syntax-highlighting/themes/my.theme "$dhi/themes"
+mkdir -p "$d/b" "$d/src/lib"
 
 errcode=0
-if [[ $# -eq 0 ]]; then
+if (( $# == 0 )); then
   ln -s "$base/data/syntax/" "$dhi"
 else
   mkdir -p "$dhi/syntax"
@@ -68,7 +67,7 @@ for name in "$@" ; do
   cp folding.out/$name.fold '"$base"'/autotests/folding/
 done' > update-reference-data.sh
 
-vtkate="XDG_DATA_DIRS='"$d"' LD_PRELOAD=~/game/ksyntax-trace/libKF5SyntaxHighlighting.so ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors -t'My Breeze Dark'"
+vtkate="XDG_DATA_DIRS='"$d"' LD_PRELOAD=~/game/ksyntax-trace/libKF5SyntaxHighlighting.so exec ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors -t'My Breeze Dark'"
 
 echo '#!/usr/bin/env sh
 '"$vtkate"' "$@"' > hi.sh
@@ -98,42 +97,50 @@ echo '#!/usr/bin/env sh
 while read l ; do echo "$l" | "$@" ; done' > unbuffered.sh
 
 echo '#!/usr/bin/env sh
-RLWRAP_HOME='"$d"' rlwrap ./unbuffered.sh "$@"' > rlwrap.sh
+RLWRAP_HOME='"$d"' exec rlwrap ./unbuffered.sh "$@"' > rlwrap.sh
 
 echo '#!/usr/bin/env sh
-XDG_DATA_DIRS='"$d"' kate "$@"' > kate.sh
+XDG_DATA_DIRS='"$d"' exec kate "$@"' > kate.sh
 
 echo '#!/usr/bin/env sh
-xmllint --noout --schema '"$base"'/data/schema/language.xsd "$@"' > validatehl.sh
+exec xmllint --noout --schema '"$base"'/data/schema/language.xsd "$@"' > validatehl.sh
 
 echo '#!/usr/bin/env sh
-cmake -DCMAKE_BUILD_TYPE=Release -DKSYNTAXHIGHLIGHTING_USE_GUI=OFF "$@" -G Ninja ..' > build.sh
+exec cmake -DCMAKE_BUILD_TYPE=Release -DKSYNTAXHIGHLIGHTING_USE_GUI=OFF "$@" -G Ninja ..' > build.sh
 
 echo '#!/usr/bin/env sh
-./validatehl.sh syntax/* && ninja clean && ninja rebuild_cache && ./test.sh' > final.sh
+./validatehl.sh syntax/* && ninja clean && ninja rebuild_cache && exec ./test.sh' > final.sh
 
 echo '#!/usr/bin/env sh
-if [[ $# -eq 1 ]]; then
-  ninja && XDG_DATA_DIRS='"$d"' ctest --output-on-failure --rerun-failed
+if (( $# == 1 )); then
+  ninja && XDG_DATA_DIRS='"$d"' exec ctest --output-on-failure --rerun-failed
 else
-  ninja && XDG_DATA_DIRS='"$d"' ctest --output-on-failure
-fi' > test.sh
+  ninja && XDG_DATA_DIRS='"$d"' exec ctest --output-on-failure
+fi
+' > test.sh
 
 echo '#!/usr/bin/env sh
-'\'"$dtool"\''/increase_version.lua $(
+exec '\'"$dtool"\''/increase_version.lua $(
   cd '\'"$base"\''
   git diff --stat @..master | sed -E '\''s#^ data/(syntax/[^.]+.xml).*#\1#;t;d'\''
 )' > increase_versions.sh
 
 echo '#!/usr/bin/env sh
-XDG_DATA_DIRS='"$d"' ./bin/highlighter_benchmark' > bench_hi.sh
+XDG_DATA_DIRS='"$d"' exec ./bin/highlighter_benchmark' > bench_hi.sh
 
 echo '#!/usr/bin/env sh
-XDG_DATA_DIRS='"$d"' ./bin/repository_benchmark' > bench_repo.sh
+XDG_DATA_DIRS='"$d"' exec ./bin/repository_benchmark' > bench_repo.sh
+
+echo '#!/usr/bin/env sh
+if [[ ! -f qt.py ]]; then
+  ln -s /usr/share/kdevgdb/printers/*.py .
+  cat ~/.gdbinit /usr/share/kdevgdb/printers/gdbinit > gdbinit
+fi
+PYTHONPATH=$PWD exec gdb -q -ex source\ gdbinit -ex run --args "$@"' > gdb.sh
 
 chmod +x update-reference-data.sh build.sh test.sh kate.sh validatehl.sh rlwrap.sh \
   hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh shi.sh sihi.sh final.sh unbuffered.sh \
-  increase_versions.sh bench_hi.sh bench_repo.sh
+  increase_versions.sh bench_hi.sh bench_repo.sh gdb.sh
 
 ln -s "$base"/autotests/input/ "$base"/data/syntax/ .
 
