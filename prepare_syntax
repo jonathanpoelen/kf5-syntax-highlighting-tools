@@ -4,8 +4,7 @@ d=~/rawdisk2/sh
 dhi="$d/org.kde.syntax-highlighting"
 
 if [ ! -d "$dhi" ] ; then
-  mkdir -p "$dhi/syntax" "$dhi/themes"
-  cp ~/game/org.kde.syntax-highlighting/themes/my.theme "$dhi/themes"
+  mkdir -p "$dhi/syntax"
 fi
 
 cd "$(dirname $0)"/../syntax-highlighting/data/syntax
