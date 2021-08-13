@@ -1,0 +1,3 @@
+[filter "ecm_version"]
+    smudge = cat
+    clean = "sed 's/^find_package(ECM 5.73.0 REQUIRED NO_MODULE)/find_package(ECM 5.74.0 REQUIRED NO_MODULE)/'"
