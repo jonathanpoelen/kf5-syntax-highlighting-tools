@@ -13,7 +13,7 @@ base="$PWD"
 d=~/rawdisk2/sh
 
 dhi="$d/org.kde.syntax-highlighting"
-mkdir -p "$d/b" "$d/src/lib"
+mkdir -p "$d/b" "$d/src"
 
 errcode=0
 if (( $# == 0 )); then
@@ -36,19 +36,15 @@ fi
 shopt -s extglob
 
 ln -s "$base/"!(src|CMakeLists.txt) "$d"
-ln -s "$base/src/"!(lib|CMakeLists.txt) "$d/src"
-ln -s "$base/src/lib/"!(CMakeLists.txt) "$d/src/lib"
+ln -s "$base/src/"!(CMakeLists.txt) "$d/src"
 
 cd "$d"
 
-sed 's#find_package(ECM 5[^ ]\+ REQUIRED NO_MODULE)#find_package(ECM 5.66.0 REQUIRED NO_MODULE)#;/include(ECMAddQch)/d' \
+sed 's#find_package(ECM 5[^ ]\+ REQUIRED NO_MODULE)#find_package(ECM 5.84.0 REQUIRED NO_MODULE)#;/include(ECMAddQch)/d' \
   "$base"/CMakeLists.txt > CMakeLists.txt
 
 sed '/^ecm_qt_install_logging_categories/,/^)/d' \
   "$base"/src/CMakeLists.txt > src/CMakeLists.txt
-
-sed '/^    DESCRIPTION "Syntax Highlighting"/d;/^    EXPORT KSYNTAXHIGHLIGHTING/d' \
-  "$base"/src/lib/CMakeLists.txt > src/lib/CMakeLists.txt
 
 cd b
 
