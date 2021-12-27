@@ -40,7 +40,9 @@ ln -s "$base/src/"!(CMakeLists.txt) "$d/src"
 
 cd "$d"
 
-sed 's#find_package(ECM 5[^ ]\+ REQUIRED NO_MODULE)#find_package(ECM 5.84.0 REQUIRED NO_MODULE)#;/include(ECMAddQch)/d' \
+sed 's#^find_package(ECM 5[^ ]\+ REQUIRED NO_MODULE)#find_package(ECM 5.84.0 REQUIRED NO_MODULE)#
+     /^include(ECMAddQch)/d
+     /^install(FILES /,/)/d' \
   "$base"/CMakeLists.txt > CMakeLists.txt
 
 sed '/^ecm_qt_install_logging_categories/,/^)/d' \
@@ -102,7 +104,7 @@ echo '#!/usr/bin/env sh
 exec xmllint --noout --schema '"$base"'/data/schema/language.xsd "$@"' > validatehl.sh
 
 echo '#!/usr/bin/env sh
-exec cmake -DCMAKE_BUILD_TYPE=Release -DKSYNTAXHIGHLIGHTING_USE_GUI=OFF "$@" -G Ninja ..' > build.sh
+exec cmake -DQT_MAJOR_VERSION=5 -DCMAKE_BUILD_TYPE=Release -DKSYNTAXHIGHLIGHTING_USE_GUI=OFF "$@" -G Ninja ..' > build.sh
 
 echo '#!/usr/bin/env sh
 ./validatehl.sh syntax/* && ninja clean && ninja rebuild_cache && exec ./test.sh' > final.sh
@@ -128,6 +130,9 @@ echo '#!/usr/bin/env sh
 XDG_DATA_DIRS='"$d"' exec ./bin/repository_benchmark' > bench_repo.sh
 
 echo '#!/usr/bin/env sh
+XDG_DATA_DIRS='"$d"' TMPDIR=$PWD perfgraph.sh ./bin/highlighter_benchmark' > perf_hi.sh
+
+echo '#!/usr/bin/env sh
 if [[ ! -f qt.py ]]; then
   ln -s /usr/share/kdevgdb/printers/*.py .
   cat ~/.gdbinit /usr/share/kdevgdb/printers/gdbinit > gdbinit
@@ -136,7 +141,7 @@ PYTHONPATH=$PWD exec gdb -q -ex source\ gdbinit -ex run --args "$@"' > gdb.sh
 
 chmod +x update-reference-data.sh build.sh test.sh kate.sh validatehl.sh rlwrap.sh \
   hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh shi.sh sihi.sh final.sh unbuffered.sh \
-  increase_versions.sh bench_hi.sh bench_repo.sh gdb.sh
+  increase_versions.sh bench_hi.sh bench_repo.sh perf_hi.sh gdb.sh
 
 ln -s "$base"/autotests/input/ "$base"/data/syntax/ .
 
