@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 set -e
 
@@ -50,14 +50,13 @@ sed '/^ecm_qt_install_logging_categories/,/^)/d' \
 
 cd b
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/bash
 set -e
 cd '"$PWD"'/autotests
 for name in "$@" ; do
-  if [[ -r output/highlight.$name.ref ]]; then
-    name=highlight.$name
-  elif [[ -r output/test.$name.ref ]]; then
-    name=test.$name
+  file=(output/*.$name.ref)
+  if [[ -r ${file[0]} ]]; then
+    name="${file[0]:7:-4}"
   fi
   echo copy $name
   cp output/$name.ref '"$base"'/autotests/reference/ || continue
@@ -67,49 +66,49 @@ done' > update-reference-data.sh
 
 vtkate="XDG_DATA_DIRS='"$d"' LD_PRELOAD=~/game/ksyntax-trace/libKF5SyntaxHighlighting.so exec ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors -b -t'My Breeze Dark'"
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 '"$vtkate"' "$@"' > hi.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 '"$vtkate"' --stdin -s "$@"' > ihi.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 '"$vtkate"' --syntax-trace=format "$@"' > nhi.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 '"$vtkate"' --syntax-trace=format --stdin -s "$@"' > nihi.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 '"$vtkate"' --syntax-trace=format --syntax-trace=stackSize "$@"' > shi.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 '"$vtkate"' --syntax-trace=format --syntax-trace=stackSize --stdin -s "$@"' > sihi.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 '"$vtkate"' --syntax-trace=format --syntax-trace=context --syntax-trace=stackSize "$@"' > thi.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 '"$vtkate"' --syntax-trace=format --syntax-trace=context --syntax-trace=stackSize --stdin -s "$@"' > tihi.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 while read l ; do echo "$l" | "$@" ; done' > unbuffered.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 RLWRAP_HOME='"$d"' exec rlwrap ./unbuffered.sh "$@"' > rlwrap.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 XDG_DATA_DIRS='"$d"' exec kate "$@"' > kate.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 exec xmllint --noout --schema '"$base"'/data/schema/language.xsd "$@"' > validatehl.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 exec cmake -DQT_MAJOR_VERSION=5 -DCMAKE_BUILD_TYPE=Release -DKSYNTAXHIGHLIGHTING_USE_GUI=OFF "$@" -G Ninja ..' > build.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 ./validatehl.sh syntax/* && ninja clean && ninja rebuild_cache && exec ./test.sh' > final.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 if (( $# == 1 )); then
   ninja && XDG_DATA_DIRS='"$d"' exec ctest --output-on-failure --rerun-failed
 else
@@ -117,22 +116,22 @@ else
 fi
 ' > test.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 exec '\'"$dtool"\''/increase_version.lua $(
   cd '\'"$base"\''
   git diff --stat @..master | sed -E '\''s#^ data/(syntax/[^.]+.xml).*#\1#;t;d'\''
 )' > increase_versions.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 XDG_DATA_DIRS='"$d"' exec ./bin/highlighter_benchmark' > bench_hi.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 XDG_DATA_DIRS='"$d"' exec ./bin/repository_benchmark' > bench_repo.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 XDG_DATA_DIRS='"$d"' TMPDIR=$PWD perfgraph.sh ./bin/highlighter_benchmark' > perf_hi.sh
 
-echo '#!/usr/bin/env sh
+echo '#!/bin/sh
 if [[ ! -f qt.py ]]; then
   ln -s /usr/share/kdevgdb/printers/*.py .
   cat ~/.gdbinit /usr/share/kdevgdb/printers/gdbinit > gdbinit
