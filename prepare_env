@@ -42,8 +42,9 @@ cd "$d"
 
 sed 's#^find_package(ECM 5[^ ]\+ REQUIRED NO_MODULE)#find_package(ECM 5.84.0 REQUIRED NO_MODULE)#
      /^include(ECMAddQch)/d
-     /^install(FILES /,/)/d' \
-  "$base"/CMakeLists.txt > CMakeLists.txt
+     /^install(FILES /,/)/d
+     /^ecm_set_disabled_deprecation_versions(/,/)/d
+' "$base"/CMakeLists.txt > CMakeLists.txt
 
 sed '/^ecm_qt_install_logging_categories/,/^)/d' \
   "$base"/src/CMakeLists.txt > src/CMakeLists.txt
