@@ -65,7 +65,7 @@ for name in "$@" ; do
   cp folding.out/$name.fold '"$base"'/autotests/folding/
 done' > update-reference-data.sh
 
-vtkate="XDG_DATA_DIRS='"$d"' LD_PRELOAD=~/game/ksyntax-trace/libKF5SyntaxHighlighting.so exec ~/game/ksyntax-trace/kate-syntax-highlighter --output-format=ansi256colors -b -t'My Breeze Dark'"
+vtkate="XDG_DATA_DIRS='"$d"' exec kate-syntax-highlighter --output-format=ansi256colors -b -t'My Breeze Dark'"
 
 echo '#!/bin/sh
 '"$vtkate"' "$@"' > hi.sh
