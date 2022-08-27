@@ -80,6 +80,12 @@ echo '#!/bin/sh
 '"$vtkate"' --syntax-trace=format --stdin -s "$@"' > nihi.sh
 
 echo '#!/bin/sh
+'"$vtkate"' --syntax-trace=region "$@"' > rhi.sh
+
+echo '#!/bin/sh
+'"$vtkate"' --syntax-trace=region --stdin -s "$@"' > rihi.sh
+
+echo '#!/bin/sh
 '"$vtkate"' --syntax-trace=format --syntax-trace=stackSize "$@"' > shi.sh
 
 echo '#!/bin/sh
@@ -140,8 +146,8 @@ fi
 PYTHONPATH=$PWD exec gdb -q -ex source\ gdbinit -ex run --args "$@"' > gdb.sh
 
 chmod +x update-reference-data.sh build.sh test.sh kate.sh validatehl.sh rlwrap.sh \
-  hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh shi.sh sihi.sh final.sh unbuffered.sh \
-  increase_versions.sh bench_hi.sh bench_repo.sh perf_hi.sh gdb.sh
+  hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh rhi.sh rihi.sh shi.sh sihi.sh final.sh \
+  unbuffered.sh increase_versions.sh bench_hi.sh bench_repo.sh perf_hi.sh gdb.sh
 
 ln -s "$base"/autotests/input/ "$base"/data/syntax/ .
 
