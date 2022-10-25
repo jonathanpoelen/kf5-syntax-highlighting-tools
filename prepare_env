@@ -6,18 +6,22 @@ set -e
 # base="${base%/*}"
 # cd "$base"
 
+if [[ -n "$W" ]]; then
+  W=/w
+fi
+
 dtool=$(dirname $0)
-cd "$dtool"/../syntax-highlighting
+cd "$dtool/../syntax-highlighting$W"
 base="$PWD"
 
 d=~/rawdisk2/sh
-
 dhi="$d/org.kde.syntax-highlighting"
+d+="$W"
 mkdir -p "$d/b" "$d/src"
 
 errcode=0
 if (( $# == 0 )); then
-  ln -s "$base/data/syntax/" "$dhi"
+  ln -s "$base/data/syntax/" "$dhi" ||:
 else
   mkdir -p "$dhi/syntax"
   cd data/syntax
@@ -35,7 +39,7 @@ fi
 
 shopt -s extglob
 
-ln -s "$base/"!(src|CMakeLists.txt) "$d"
+ln -s "$base/"!(w|src|CMakeLists.txt) "$d"
 ln -s "$base/src/"!(CMakeLists.txt) "$d/src"
 
 cd "$d"
