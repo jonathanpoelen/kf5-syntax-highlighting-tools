@@ -17,7 +17,7 @@ base="$PWD"
 d=~/rawdisk2/sh
 dhi="$d/org.kde.syntax-highlighting"
 d+="$W"
-mkdir -p "$d/b" "$d/src"
+mkdir -p "$d/b" "$d/src/quick"
 
 errcode=0
 if (( $# == 0 )); then
@@ -40,7 +40,8 @@ fi
 shopt -s extglob
 
 ln -s "$base/"!(w|src|CMakeLists.txt) "$d"
-ln -s "$base/src/"!(CMakeLists.txt) "$d/src"
+ln -s "$base/src/"!(quick|CMakeLists.txt) "$d/src"
+ln -s "$base/src/quick/"!(CMakeLists.txt) "$d/src/quick"
 
 cd "$d"
 
@@ -53,6 +54,10 @@ sed 's#^find_package(ECM 5[^ ]\+ REQUIRED NO_MODULE)#find_package(ECM 5.84.0 REQ
 
 sed '/^ecm_qt_install_logging_categories/,/^)/d' \
   "$base"/src/CMakeLists.txt > src/CMakeLists.txt
+
+sed 's/^ecm_add_qml_module.*/add_library(kquicksyntaxhighlightingplugin)/
+     /^ecm_finalize_qml_module/d
+' "$base"/src/quick/CMakeLists.txt > src/quick/CMakeLists.txt
 
 cd b
 
@@ -103,6 +108,9 @@ echo '#!/bin/sh
 '"$vtkate"' --syntax-trace=format --syntax-trace=context --syntax-trace=stackSize --stdin -s "$@"' > tihi.sh
 
 echo '#!/bin/sh
+./bin/kate-syntax-highlighter --output-format=ansi256colors -b -t"My Breeze Dark" --stdin -s "$@"' > bihi.sh
+
+echo '#!/bin/sh
 while read l ; do echo "$l" | "$@" ; done' > unbuffered.sh
 
 echo '#!/bin/sh
@@ -115,7 +123,7 @@ echo '#!/bin/sh
 exec xmllint --noout --schema '"$base"'/data/schema/language.xsd "$@"' > validatehl.sh
 
 echo '#!/bin/sh
-exec cmake -DQT_MAJOR_VERSION=5 -DCMAKE_BUILD_TYPE=Release -DKSYNTAXHIGHLIGHTING_USE_GUI=OFF "$@" -G Ninja ..' > build.sh
+exec cmake -DQT_MAJOR_VERSION=6 -DCMAKE_BUILD_TYPE=Release -DKSYNTAXHIGHLIGHTING_USE_GUI=OFF "$@" -G Ninja ..' > build.sh
 
 echo '#!/bin/sh
 ./validatehl.sh syntax/* && ninja clean && ninja rebuild_cache && exec ./test.sh' > final.sh
@@ -141,7 +149,7 @@ echo '#!/bin/sh
 XDG_DATA_DIRS='"$d"' exec ./bin/repository_benchmark' > bench_repo.sh
 
 echo '#!/bin/sh
-XDG_DATA_DIRS='"$d"' TMPDIR=$PWD perfgraph.sh ./bin/highlighter_benchmark' > perf_hi.sh
+XDG_DATA_DIRS='"$d"' TMPDIR=$PWD perfgraph.sh -r ./bin/highlighter_benchmark' > perf_hi.sh
 
 echo '#!/bin/sh
 if [[ ! -f qt.py ]]; then
@@ -152,7 +160,7 @@ PYTHONPATH=$PWD exec gdb -q -ex source\ gdbinit -ex run --args "$@"' > gdb.sh
 
 chmod +x update-reference-data.sh build.sh test.sh kate.sh validatehl.sh rlwrap.sh \
   hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh rhi.sh rihi.sh shi.sh sihi.sh final.sh \
-  unbuffered.sh increase_versions.sh bench_hi.sh bench_repo.sh perf_hi.sh gdb.sh
+  bihi.sh unbuffered.sh increase_versions.sh bench_hi.sh bench_repo.sh perf_hi.sh gdb.sh
 
 ln -s "$base"/autotests/input/ "$base"/data/syntax/ .
 
