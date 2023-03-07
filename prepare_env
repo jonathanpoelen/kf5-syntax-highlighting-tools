@@ -108,6 +108,9 @@ echo '#!/bin/sh
 '"$vtkate"' --syntax-trace=format --syntax-trace=context --syntax-trace=stackSize --stdin -s "$@"' > tihi.sh
 
 echo '#!/bin/sh
+./bin/kate-syntax-highlighter --output-format=ansi256colors -b -t"My Breeze Dark" "$@"' > bhi.sh
+
+echo '#!/bin/sh
 ./bin/kate-syntax-highlighter --output-format=ansi256colors -b -t"My Breeze Dark" --stdin -s "$@"' > bihi.sh
 
 echo '#!/bin/sh
@@ -160,7 +163,8 @@ PYTHONPATH=$PWD exec gdb -q -ex source\ gdbinit -ex run --args "$@"' > gdb.sh
 
 chmod +x update-reference-data.sh build.sh test.sh kate.sh validatehl.sh rlwrap.sh \
   hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh rhi.sh rihi.sh shi.sh sihi.sh final.sh \
-  bihi.sh unbuffered.sh increase_versions.sh bench_hi.sh bench_repo.sh perf_hi.sh gdb.sh
+  bhi.sh bihi.sh unbuffered.sh increase_versions.sh bench_hi.sh bench_repo.sh \
+  perf_hi.sh gdb.sh
 
 ln -s "$base"/autotests/input/ "$base"/data/syntax/ .
 
