@@ -61,8 +61,14 @@ sed 's/^ecm_add_qml_module.*/add_library(kquicksyntaxhighlightingplugin)/
 
 cd b
 
-echo '#!/bin/bash
-set -e
+declare bins=()
+
+add_exe() {
+  echo "${shebang}$2" > $1.sh
+  bins+=($1.sh)
+}
+
+add_exe update-reference-data 'set -e
 cd '"$PWD"'/autotests
 for name in "$@" ; do
   file=(output/*.$name.ref)
@@ -73,98 +79,66 @@ for name in "$@" ; do
   cp output/$name.ref '"$base"'/autotests/reference/ || continue
   cp html.output/$name.html html.output/$name.dark.html '"$base"'/autotests/html/
   cp folding.out/$name.fold '"$base"'/autotests/folding/
-done' > update-reference-data.sh
+done'
 
-vtkate="XDG_DATA_DIRS='"$d"' exec kate-syntax-highlighter --output-format=ansi256colors -b -t'My Breeze Dark'"
+# *.debug=true;kf.syntaxhighlighting.debug=true
+vtbkate="QT_LOGGING_RULES='*.debug=true' exec ./bin/kate-syntax-highlighter --output-format=ansi256colors -b -t'My Breeze Dark'"
+vtkate="${vtbkate/.\/bin\/}"
+vtkate2="XDG_DATA_DIRS='"$d"' $vtkate"
+shebang=$'#!/bin/sh\n'
 
-echo '#!/bin/sh
-'"$vtkate"' "$@"' > hi.sh
+declare -A m=(
+  _ ''
+  n  '--syntax-trace=format'
+  r  '--syntax-trace=region'
+  s  '--syntax-trace=format --syntax-trace=stackSize'
+  t  '--syntax-trace=format --syntax-trace=context --syntax-trace=stackSize'
+)
 
-echo '#!/bin/sh
-'"$vtkate"' --stdin -s "$@"' > ihi.sh
+declare -A bm=(
+  _ "XDG_DATA_DIRS='"$d"' $vtkate"
+  k  "$vtkate"
+  b  "$vtbkate"
+)
 
-echo '#!/bin/sh
-'"$vtkate"' --syntax-trace=format "$@"' > nhi.sh
+for k1 in "${!m[@]}"; do
+  for k2 in "${!bm[@]}"; do
+    add_exe ${k2/_}${k1/_}hi  "${bm[$k2]} ${m[$k1]} \"\$@\""
+    add_exe ${k2/_}${k1/_}ihi "${bm[$k2]} ${m[$k1]} --stdin -s \"\$@\""
+  done
+done
 
-echo '#!/bin/sh
-'"$vtkate"' --syntax-trace=format --stdin -s "$@"' > nihi.sh
+add_exe rlwrap "QT_LOGGING_RULES='*.debug=true' RLWRAP_HOME='$d' exec rlwrap ./unbuffered.sh \"\$@\""
+add_exe kate "XDG_DATA_DIRS='$d' exec kate \"$@\""
+add_exe validatehl "exec xmllint --noout --schema '$base'/data/schema/language.xsd \"\$@\""
 
-echo '#!/bin/sh
-'"$vtkate"' --syntax-trace=region "$@"' > rhi.sh
+add_exe unbuffered 'while read l ; do echo "$l" | "$@" ; done'
+add_exe build 'exec cmake -DQT_MAJOR_VERSION=6 -DCMAKE_BUILD_TYPE=Release -DKSYNTAXHIGHLIGHTING_USE_GUI=OFF "$@" -G Ninja ..'
+add_exe final './validatehl.sh syntax/* && ninja clean && ninja rebuild_cache && exec ./test.sh'
 
-echo '#!/bin/sh
-'"$vtkate"' --syntax-trace=region --stdin -s "$@"' > rihi.sh
-
-echo '#!/bin/sh
-'"$vtkate"' --syntax-trace=format --syntax-trace=stackSize "$@"' > shi.sh
-
-echo '#!/bin/sh
-'"$vtkate"' --syntax-trace=format --syntax-trace=stackSize --stdin -s "$@"' > sihi.sh
-
-echo '#!/bin/sh
-'"$vtkate"' --syntax-trace=format --syntax-trace=context --syntax-trace=stackSize "$@"' > thi.sh
-
-echo '#!/bin/sh
-'"$vtkate"' --syntax-trace=format --syntax-trace=context --syntax-trace=stackSize --stdin -s "$@"' > tihi.sh
-
-echo '#!/bin/sh
-./bin/kate-syntax-highlighter --output-format=ansi256colors -b -t"My Breeze Dark" "$@"' > bhi.sh
-
-echo '#!/bin/sh
-./bin/kate-syntax-highlighter --output-format=ansi256colors -b -t"My Breeze Dark" --stdin -s "$@"' > bihi.sh
-
-echo '#!/bin/sh
-while read l ; do echo "$l" | "$@" ; done' > unbuffered.sh
-
-echo '#!/bin/sh
-RLWRAP_HOME='"$d"' exec rlwrap ./unbuffered.sh "$@"' > rlwrap.sh
-
-echo '#!/bin/sh
-XDG_DATA_DIRS='"$d"' exec kate "$@"' > kate.sh
-
-echo '#!/bin/sh
-exec xmllint --noout --schema '"$base"'/data/schema/language.xsd "$@"' > validatehl.sh
-
-echo '#!/bin/sh
-exec cmake -DQT_MAJOR_VERSION=6 -DCMAKE_BUILD_TYPE=Release -DKSYNTAXHIGHLIGHTING_USE_GUI=OFF "$@" -G Ninja ..' > build.sh
-
-echo '#!/bin/sh
-./validatehl.sh syntax/* && ninja clean && ninja rebuild_cache && exec ./test.sh' > final.sh
-
-echo '#!/bin/sh
-if (( $# == 1 )); then
-  ninja && XDG_DATA_DIRS='"$d"' exec ctest --output-on-failure --rerun-failed
+add_exe test "export QT_LOGGING_RULES='*.debug=true'
+if (( \$# == 1 )); then
+  ninja && XDG_DATA_DIRS='$d' exec ctest --output-on-failure --rerun-failed
 else
-  ninja && XDG_DATA_DIRS='"$d"' exec ctest --output-on-failure
-fi
-' > test.sh
+  ninja && XDG_DATA_DIRS='$d' exec ctest --output-on-failure
+fi"
 
-echo '#!/bin/sh
-exec '\'"$dtool"\''/increase_version.lua $(
-  cd '\'"$base"\''
-  git diff --stat @..master | sed -E '\''s#^ data/(syntax/[^.]+.xml).*#\1#;t;d'\''
-)' > increase_versions.sh
+add_exe increase_versions "exec '$dtool'/increase_version.lua \$(
+  cd '$base'
+  git diff --stat @..master | sed -E 's#^ data/(syntax/[^.]+.xml).*#\\1#;t;d'
+)"
 
-echo '#!/bin/sh
-XDG_DATA_DIRS='"$d"' exec ./bin/highlighter_benchmark' > bench_hi.sh
+add_exe bench_hi "XDG_DATA_DIRS='$d' exec ./bin/highlighter_benchmark"
+add_exe bench_repo "XDG_DATA_DIRS='$d' exec ./bin/repository_benchmark"
+add_exe perf_hi "XDG_DATA_DIRS='$d' TMPDIR=\"\$PWD\" perfgraph.sh -r ./bin/highlighter_benchmark"
 
-echo '#!/bin/sh
-XDG_DATA_DIRS='"$d"' exec ./bin/repository_benchmark' > bench_repo.sh
-
-echo '#!/bin/sh
-XDG_DATA_DIRS='"$d"' TMPDIR=$PWD perfgraph.sh -r ./bin/highlighter_benchmark' > perf_hi.sh
-
-echo '#!/bin/sh
-if [[ ! -f qt.py ]]; then
+add_exe gdb 'if [[ ! -f qt.py ]]; then
   ln -s /usr/share/kdevgdb/printers/*.py .
   cat ~/.gdbinit /usr/share/kdevgdb/printers/gdbinit > gdbinit
 fi
-PYTHONPATH=$PWD exec gdb -q -ex source\ gdbinit -ex run --args "$@"' > gdb.sh
+PYTHONPATH=$PWD exec gdb -q -ex source\ gdbinit -ex run --args "$@"'
 
-chmod +x update-reference-data.sh build.sh test.sh kate.sh validatehl.sh rlwrap.sh \
-  hi.sh ihi.sh thi.sh tihi.sh nhi.sh nihi.sh rhi.sh rihi.sh shi.sh sihi.sh final.sh \
-  bhi.sh bihi.sh unbuffered.sh increase_versions.sh bench_hi.sh bench_repo.sh \
-  perf_hi.sh gdb.sh
+chmod +x "${bins[@]}"
 
 ln -s "$base"/autotests/input/ "$base"/data/syntax/ .
 
