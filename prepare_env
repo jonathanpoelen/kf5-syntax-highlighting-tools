@@ -82,34 +82,34 @@ for name in "$@" ; do
 done'
 
 # *.debug=true;kf.syntaxhighlighting.debug=true
-vtbkate="QT_LOGGING_RULES='*.debug=true' exec ./bin/kate-syntax-highlighter --output-format=ansi256colors -b -t'My Breeze Dark'"
+vtbkate="QT_LOGGING_RULES='*.debug=true' exec ./bin/ksyntaxhighlighter6 -fansi -b -t'My Breeze Dark'"
 vtkate="${vtbkate/.\/bin\/}"
 vtkate2="XDG_DATA_DIRS='"$d"' $vtkate"
 shebang=$'#!/bin/sh\n'
 
 declare -A m=(
   _ ''
-  n  '--syntax-trace=format'
-  r  '--syntax-trace=region'
-  s  '--syntax-trace=format --syntax-trace=stackSize'
-  t  '--syntax-trace=format --syntax-trace=context --syntax-trace=stackSize'
+  n '--syntax-trace=format'
+  r '--syntax-trace=region'
+  s '--syntax-trace=format --syntax-trace=stackSize'
+  t '--syntax-trace=format --syntax-trace=context --syntax-trace=stackSize'
 )
 
 declare -A bm=(
   _ "XDG_DATA_DIRS='"$d"' $vtkate"
-  k  "$vtkate"
-  b  "$vtbkate"
+  k "$vtkate"
+  b "XDG_DATA_DIRS='"$d"' $vtbkate"
 )
 
 for k1 in "${!m[@]}"; do
   for k2 in "${!bm[@]}"; do
     add_exe ${k2/_}${k1/_}hi  "${bm[$k2]} ${m[$k1]} \"\$@\""
-    add_exe ${k2/_}${k1/_}ihi "${bm[$k2]} ${m[$k1]} --stdin -s \"\$@\""
+    add_exe ${k2/_}${k1/_}ihi "${bm[$k2]} ${m[$k1]} -s \"\$@\""
   done
 done
 
 add_exe rlwrap "QT_LOGGING_RULES='*.debug=true' RLWRAP_HOME='$d' exec rlwrap ./unbuffered.sh \"\$@\""
-add_exe kate "XDG_DATA_DIRS='$d' exec kate \"$@\""
+add_exe kate "XDG_DATA_DIRS='$d' exec kate \"\$@\""
 add_exe validatehl "exec xmllint --noout --schema '$base'/data/schema/language.xsd \"\$@\""
 
 add_exe unbuffered 'while read l ; do echo "$l" | "$@" ; done'
