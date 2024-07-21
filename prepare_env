@@ -132,6 +132,11 @@ add_exe bench_hi "XDG_DATA_DIRS='$d' exec ./bin/highlighter_benchmark"
 add_exe bench_repo "XDG_DATA_DIRS='$d' exec ./bin/repository_benchmark"
 add_exe perf_hi "XDG_DATA_DIRS='$d' TMPDIR=\"\$PWD\" perfgraph.sh -r ./bin/highlighter_benchmark"
 
+add_exe comp "export XDG_DATA_DIRS='/home/jonathan/rawdisk2/sh'
+./bin/htmlhighlighter_test -silent
+./bin/folding_test -silent
+./bin/testhighlighter_test -silent"
+
 add_exe gdb 'if [[ ! -f qt.py ]]; then
   ln -s /usr/share/kdevgdb/printers/*.py .
   cat ~/.gdbinit /usr/share/kdevgdb/printers/gdbinit > gdbinit
