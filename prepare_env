@@ -82,7 +82,7 @@ for name in "$@" ; do
 done'
 
 # *.debug=true;kf.syntaxhighlighting.debug=true
-vtbkate="QT_LOGGING_RULES='*.debug=true' exec ./bin/ksyntaxhighlighter6 -fansi -b -t'My Breeze Dark'"
+vtbkate="QT_LOGGING_RULES='*.debug=true' exec ./bin/ksyntaxhighlighter6 -b -t'My Breeze Dark'"
 vtkate="${vtbkate/.\/bin\/}"
 vtkate2="XDG_DATA_DIRS='"$d"' $vtkate"
 shebang=$'#!/bin/sh\n'
