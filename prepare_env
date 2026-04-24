@@ -17,7 +17,7 @@ base="$PWD"
 d=~/rawdisk2/sh
 dhi="$d/org.kde.syntax-highlighting"
 d+="$W"
-mkdir -p "$d/b" "$d/src/quick"
+mkdir -p "$d/b" "$d/src"
 
 errcode=0
 if (( $# == 0 )); then
@@ -40,23 +40,17 @@ fi
 shopt -s extglob
 
 ln -s "$base/"!(w|src|CMakeLists.txt) "$d"
-ln -s "$base/src/"!(quick|CMakeLists.txt) "$d/src"
-ln -s "$base/src/quick/"!(CMakeLists.txt) "$d/src/quick"
+ln -s "$base/src/"!(CMakeLists.txt) "$d/src"
 
 cd "$d"
 
 sed 's#^find_package(ECM 6[^ ]\+ REQUIRED NO_MODULE)#find_package(ECM 6.13.0 REQUIRED NO_MODULE)#
-     /^include(ECMAddQch)/d
      /^install(FILES /,/)/d
      /^ecm_install_po_files_as_qm/d
 ' "$base"/CMakeLists.txt > CMakeLists.txt
 
 sed '/^ecm_qt_install_logging_categories/,/^)/d' \
   "$base"/src/CMakeLists.txt > src/CMakeLists.txt
-
-sed 's/^ecm_add_qml_module.*/add_library(kquicksyntaxhighlightingplugin)/
-     /^ecm_finalize_qml_module/d
-' "$base"/src/quick/CMakeLists.txt > src/quick/CMakeLists.txt
 
 cd b
 
@@ -67,7 +61,9 @@ add_exe() {
   bins+=($1.sh)
 }
 
-add_exe update-reference-data 'set -e
+add_exe update-reference-data '
+#!/bin/bash
+set -e
 cd '"$PWD"'/autotests
 for name in "$@" ; do
   file=(output/*.$name.ref)
@@ -81,7 +77,7 @@ for name in "$@" ; do
 done'
 
 # *.debug=true;kf.syntaxhighlighting.debug=true
-vtbkate="QT_LOGGING_RULES='*.debug=true' exec ./bin/ksyntaxhighlighter6 -b -t'My Breeze Dark' -fansi256Colors"
+vtbkate="QT_LOGGING_RULES='*.debug=true' exec ./bin/ksyntaxhighlighter6 -b -t'Jln Dark' -fansi256Colors"
 vtkate="${vtbkate/.\/bin\/}"
 vtkate2="XDG_DATA_DIRS='"$d"' $vtkate"
 shebang=$'#!/bin/sh\n'
