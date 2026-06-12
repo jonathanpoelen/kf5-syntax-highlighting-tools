@@ -118,6 +118,23 @@ else
   ninja && XDG_DATA_DIRS='$d' exec ctest --output-on-failure
 fi"
 
+add_exe test_syntax "ninja htmlhighlighter_test folding_test testhighlighter_test
+
+export XDG_DATA_DIRS='$d'
+export QT_LOGGING_RULES='*.debug=true'
+
+r=0
+output=
+output+=\$(echo; ./bin/htmlhighlighter_test -silent) || r=1
+output+=\$(echo; ./bin/folding_test -silent) || r=1
+output+=\$(echo; ./bin/testhighlighter_test -silent) || r=1
+
+if [ \$r = 1 ]; then
+  unset XDG_DATA_DIRS
+  ksyntaxhighlighter6 -tJln\ Dark -b -fansi256Colors -s diff <<<\"\$output\"
+  exit 1
+fi"
+
 add_exe increase_versions "exec '$dtool'/increase_version.lua \$(
   cd '$base'
   git diff --stat @..master | sed -E 's#^ data/(syntax/[^.]+.xml).*#\\1#;t;d'
