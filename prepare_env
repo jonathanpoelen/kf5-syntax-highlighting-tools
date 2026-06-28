@@ -155,6 +155,8 @@ add_exe gdb 'if [[ ! -f qt.py ]]; then
 fi
 PYTHONPATH=$PWD exec gdb -q -ex source\ gdbinit -ex run --args "$@"'
 
+add_exe doc 'KDE_DOCS=/usr/share/doc/qt6/ ninja src/lib/CMakeFiles/generate_docs_KF6SyntaxHighlighting'
+
 chmod +x "${bins[@]}"
 
 ln -s "$base"/autotests/input/ "$base"/data/syntax/ .
